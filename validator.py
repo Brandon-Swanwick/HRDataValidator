@@ -8,6 +8,14 @@ class HRDataValidator:
         self.raw_data = data_list
         self.errors = 0
 
+    def validate_phone(self, phone:str) -> bool:
+        # Validating that the phone number is a valid 7 digit phone number
+        if len(phone) != 7:
+            logging.error(f"Phone Validation check has failed: Phone number must be exactly 7 digits")
+            self.errors += 1
+            return False
+        return True
+
     def validate_email(self, email: str) -> bool:
         # Validates if an email string is non-empty and contains exactly one '@' symbol to conform to the proper format
         if not email:
@@ -65,29 +73,35 @@ class HRDataValidator:
 
 if __name__ == "__main__":
     test_data = [
-        # 0. PASS: All 4 fields are valid
-        {"id": "EMP1234", "salary": 75000.00, "hire_date": "2023-10-25", "email": "joe.smith@corp.com"},
+        # 0. PASS: All 5 fields are valid
+        {"id": "EMP1234", "salary": 75000.00, "hire_date": "2023-10-25", "email": "joe.smith@corp.com", "phone": "5551234"},
         
         # 1. FAIL (ID length)
-        {"id": "SHORT", "salary": 90000, "hire_date": "2022-01-15", "email": "pass@test.com"},
+        {"id": "SHORT", "salary": 90000, "hire_date": "2022-01-15", "email": "pass@test.com", "phone": "5559876"},
         
         # 2. FAIL (Salary Type)
-        {"id": "EMP1234", "salary": "ABC", "hire_date": "2024-03-01", "email": "pass@test.com"},
+        {"id": "EMP1234", "salary": "ABC", "hire_date": "2024-03-01", "email": "pass@test.com", "phone": "1234567"},
         
         # 3. FAIL (Empty ID)
-        {"id": "", "salary": 50000, "hire_date": "2021-11-09", "email": "pass@test.com"},
+        {"id": "", "salary": 50000, "hire_date": "2021-11-09", "email": "pass@test.com", "phone": "9990000"},
         
         # 4. FAIL (Date Format)
-        {"id": "EMP9999", "salary": 55000, "hire_date": "10/25/2023", "email": "pass@test.com"},
+        {"id": "EMP9999", "salary": 55000, "hire_date": "10/25/2023", "email": "pass@test.com", "phone": "1112222"},
         
         # 5. FAIL (Invalid Date Value)
-        {"id": "EMP0000", "salary": 65000, "hire_date": "2024-02-30", "email": "pass@test.com"},
+        {"id": "EMP0000", "salary": 65000, "hire_date": "2024-02-30", "email": "pass@test.com", "phone": "7776666"},
 
-        # 6. NEW TEST: FAIL (Email - missing '@')
-        {"id": "EMP7777", "salary": 45000, "hire_date": "2023-05-01", "email": "invalid.email.com"},
+        # 6. FAIL (Email - missing '@')
+        {"id": "EMP7777", "salary": 45000, "hire_date": "2023-05-01", "email": "invalid.email.com", "phone": "8887777"},
         
-        # 7. NEW TEST: FAIL (Email - empty string)
-        {"id": "EMP8888", "salary": 80000, "hire_date": "2022-12-12", "email": ""},
+        # 7. FAIL (Email - empty string)
+        {"id": "EMP8888", "salary": 80000, "hire_date": "2022-12-12", "email": "", "phone": "1002003"},
+
+        # 8. NEW TEST: FAIL (Phone - too short)
+        {"id": "EMP5000", "salary": 60000, "hire_date": "2023-11-11", "email": "valid@email.com", "phone": "123"},
+        
+        # 9. NEW TEST: FAIL (Phone - too long)
+        {"id": "EMP6000", "salary": 70000, "hire_date": "2024-01-01", "email": "valid@email.com", "phone": "1234567890"},
     ]
 
     validator = HRDataValidator(test_data)
@@ -100,9 +114,10 @@ if __name__ == "__main__":
         salary_valid = validator.validate_salary(record["salary"])
         date_valid = validator.validate_hire_date(record["hire_date"])
         email_valid = validator.validate_email(record["email"]) # NEW CALL
+        phone_valid = validator.validate_phone(record["phone"])
 
         # Print the status, including the new email check
-        print(f"ID: {record['id']} | Salary: {record['salary']} | Date: {record['hire_date']} | Email: {record['email']} | Valid ID: {id_valid} | Valid Salary: {salary_valid} | Valid Date: {date_valid} | Valid Email: {email_valid}")
+        print(f"ID: {record['id']} | Salary: {record['salary']} | Date: {record['hire_date']} | Email: {record['email']} | Phone: {record['phone']} | Valid ID: {id_valid} | Valid Salary: {salary_valid} | Valid Date: {date_valid} | Valid Email: {email_valid} | Valid Phone: {phone_valid}")
     
     # Final print statement...
     print(f"\n--- Final Validation Summary ---")
@@ -118,9 +133,10 @@ if __name__ == "__main__":
         salary_valid = validator.validate_salary(record["salary"])
         email_valid = validator.validate_email(record["email"])
         date_valid = validator.validate_hire_date(record["hire_date"])
+        phone_valid = validator.validate_phone(record["phone"])
 
         # Optional: Print the status for that record
-        print(f"ID: {record['id']} | Salary: {record['salary']} | Date: {record.get('hire_date', 'N/A')} | Valid ID: {id_valid} | Valid Salary: {salary_valid} | Valid Date: {date_valid}\n")
+        print(f"ID: {record['id']} | Salary: {record['salary']} | Date: {record['hire_date']} | Email: {record['email']} | Phone: {record['phone']} | Valid ID: {id_valid} | Valid Salary: {salary_valid} | Valid Date: {date_valid} | Valid Email: {email_valid} | Valid Phone: {phone_valid}")
     print(f"\n--- Final Validation Summary ---")
     print(f"Total records processed: {len(test_data)}")
     print(f"Total Errors Recorded: {validator.errors}")
