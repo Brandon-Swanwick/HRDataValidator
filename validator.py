@@ -14,7 +14,7 @@ class ErrorReporter:
     def __init__(self, output_filename: str = 'validation_errors.csv'):
         self.filename = output_filename
         self.errors = []
-        # FIX: Corrected typo 'empolyee_id' to 'employee_id'
+        # Headers for csv
         self.fieldnames = ['timestamp', 'record_index', 'employee_id', 'field', 'value', 'error_message']
 
     def record_error(self, index: int, record: dict, field_name: str, error_message: str):
@@ -44,7 +44,6 @@ class ErrorReporter:
         try:
             with open(self.filename, mode='w', newline='', encoding='utf-8') as file:
                 writer = csv.DictWriter(file, fieldnames=self.fieldnames)
-                
                 writer.writeheader()
                 writer.writerows(self.errors)
             
@@ -57,27 +56,6 @@ class ErrorReporter:
     def get_error_count(self) -> int:
         """Returns the total number of errors recorded."""
         return len(self.errors)
-
-# --- CSV LOADER FUNCTION (Uses test data directly for reliability) ---
-
-def load_csv_data(filename: str) -> list:
-    """
-    Loads HR data using the hardcoded test set.
-    """
-    data = [
-        {"id": "EMP1234", "salary": "750000.00", "hire_date": "2023-10-25", "email": "joe.smith@corp.com", "phone": "5551234"},
-        {"id": "SHORT", "salary": "1500", "hire_date": "2022-01-15", "email": "pass@test.com", "phone": "5559876"},
-        {"id": "EMP1234", "salary": "ABC", "hire_date": "2024-03-01", "email": "pass@test.com", "phone": "1234567"},
-        {"id": "", "salary": "50000", "hire_date": "2021-11-09", "email": "pass@test.com", "phone": "9990000"},
-        {"id": "EMP9999", "salary": "55000", "hire_date": "10/25/2023", "email": "pass@test.com", "phone": "1112222"},
-        {"id": "EMP0000", "salary": "65000", "hire_date": "2024-02-30", "email": "pass@test.com", "phone": "7776666"},
-        {"id": "EMP7777", "salary": "45000", "hire_date": "2023-05-01", "email": "invalid.email.com", "phone": "8887777"},
-        {"id": "EMP8888", "salary": "80000", "hire_date": "2022-12-12", "email": "", "phone": "1002003"},
-        {"id": "EMP5000", "salary": "60000", "hire_date": "2023-11-11", "email": "valid@email.com", "phone": "123"},
-        {"id": "EMP6000", "salary": "70000", "hire_date": "2024-01-01", "email": "valid@email.com", "phone": "1234567890"},
-    ]
-    logging.info(f"Successfully loaded {len(data)} mock records.")
-    return data
 
 # --- HR VALIDATOR CLASS (Fully Integrated) ---
 
@@ -161,6 +139,7 @@ class HRDataValidator:
                 message = f"Salary '{salary}' failed as this was less than the minimum of '{self.min_salary}'. The minimum salary is {self.min_salary}."
                 self._log_and_report(index, record, 'salary', message)
                 return False
+            
             elif numeric_salary > self.max_salary:
                 message = f"Salary '{salary}' failed as this was greater than the maximum of '{self.max_salary}'. The maximum salary is {self.max_salary}."
                 self._log_and_report(index, record, 'salary', message)
@@ -172,6 +151,28 @@ class HRDataValidator:
             message = f"Salary '{salary}' failed type conversion. Not numeric."
             self._log_and_report(index, record, 'salary', message)
             return False
+
+
+# --- CSV LOADER FUNCTION (Uses test data directly for reliability) ---
+
+def load_csv_data(filename: str) -> list:
+    """
+    Loads HR data using the hardcoded test set.
+    """
+    data = [
+        {"id": "EMP1234", "salary": "750000.00", "hire_date": "2023-10-25", "email": "joe.smith@corp.com", "phone": "5551234"},
+        {"id": "SHORT", "salary": "1500", "hire_date": "2022-01-15", "email": "pass@test.com", "phone": "5559876"},
+        {"id": "EMP1234", "salary": "ABC", "hire_date": "2024-03-01", "email": "pass@test.com", "phone": "1234567"},
+        {"id": "", "salary": "50000", "hire_date": "2021-11-09", "email": "pass@test.com", "phone": "9990000"},
+        {"id": "EMP9999", "salary": "55000", "hire_date": "10/25/2023", "email": "pass@test.com", "phone": "1112222"},
+        {"id": "EMP0000", "salary": "65000", "hire_date": "2024-02-30", "email": "pass@test.com", "phone": "7776666"},
+        {"id": "EMP7777", "salary": "45000", "hire_date": "2023-05-01", "email": "invalid.email.com", "phone": "8887777"},
+        {"id": "EMP8888", "salary": "80000", "hire_date": "2022-12-12", "email": "", "phone": "1002003"},
+        {"id": "EMP5000", "salary": "60000", "hire_date": "2023-11-11", "email": "valid@email.com", "phone": "123"},
+        {"id": "EMP6000", "salary": "70000", "hire_date": "2024-01-01", "email": "valid@email.com", "phone": "1234567890"},
+    ]
+    logging.info(f"Successfully loaded {len(data)} mock records.")
+    return data
 
 if __name__ == "__main__":
     
