@@ -1,4 +1,31 @@
+# --- System / Environment ---
 venv/
 __pycache__/
 .pytest_cache/
 *.pyc
+.DS_Store
+
+# --- The "Ignore All" Rule ---
+*
+
+# --- Allow Folders ---
+!source/
+!tests/
+
+# --- Allow Source Files ---
+!source/validator.py
+!source/config.json
+!source/employees.csv
+
+# --- Allow Test Files ---
+!tests/*.py
+
+# --- Allow Root Files ---
+!README.md
+!.gitignore
+!requirements.txt
+
+# --- Explicitly Ignore Reports ---
+validation_errors.csv
+validation_errors.json
+validation_errors.parquet
