@@ -36,7 +36,7 @@ class ErrorReporter:
                 writer = csv.DictWriter(file, fieldnames=self.fieldnames)
                 writer.writeheader()
                 writer.writerows(self.errors)
-            print(f"\nReport written successfully to {self.csv_filename}. Total errors: {len(self.errors)}")
+                logging.info(f"CSV Report written: {self.csv_filename}")
         except Exception as e:
             logging.critical(f"CRITICAL: Failed to write error report: {e}")
 
@@ -54,10 +54,11 @@ class ErrorReporter:
             import pandas as pd
             df = pd.DataFrame(self.errors)
             df.to_parquet(f"{self.parquet_filename}")
+            logging.info(f"Parquet Report written: {self.parquet_filename}")
         except ImportError:
             logging.warning(f"skipping Parquet: pandas/pyarrow not installed.")
         
-        logging.info(f"Both CSV, and JSON outputs are logged, total of {len(self.errors)}")
+        logging.info(f"All 3 output files are logged, total of {len(self.errors)} errors. ")
 
     def get_error_count(self) -> int:
         return len(self.errors)
@@ -87,7 +88,7 @@ class HRDataValidator:
                 self.date_format = config['date_rules']['format']
                 self.phone_len = config['phone_rules']['required_length']
                 self.email_symbol = config['email_rules']['required_symbol']
-                logging.info("Configuration loaded successfully from JSON.")
+                logging.info(f"Configuration loaded successfully from {config_filepath}.")
         except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
             logging.warning(f"Config issues ({e}). Using system fallback defaults.")
             self.min_salary = defaults["min_salary"]
@@ -117,11 +118,26 @@ class HRDataValidator:
         return True
 
     def validate_hire_date(self, index: int, record: dict, date_str: str) -> bool:
+        import re
+        # Step 1: Check if the string matches the visual pattern (YYYY-MM-DD)
+        # We use a regex so we can tell the difference between format and logic
+        format_pattern = r'^\d{4}-\d{2}-\d{2}$'
+        
+        if not re.match(format_pattern, str(date_str)):
+            msg = f"Date Format Error: '{date_str}' does not match {self.date_format}."
+            self._log_and_report(index, record, 'hire_date', msg)
+            return False
+
+        # Step 2: Check if the date actually exists on the calendar
         try:
             datetime.strptime(date_str, self.date_format)
             return True
-        except (ValueError, TypeError):
-            msg = f"Date check failed: '{date_str}' expected format {self.date_format}."
+        except ValueError:
+            msg = f"Date Calendar Error: '{date_str}' is an impossible date (e.g. Feb 30th)."
+            self._log_and_report(index, record, 'hire_date', msg)
+            return False
+        except TypeError:
+            msg = f"Date check failed: '{date_str}' is not a valid string."
             self._log_and_report(index, record, 'hire_date', msg)
             return False
 
