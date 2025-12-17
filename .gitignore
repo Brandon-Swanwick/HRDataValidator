@@ -1,0 +1,12 @@
+# Ignore everything by default
+*
+
+# Allow the specific files we want to track
+!validator.py
+!config.json
+!employees.csv
+!README.md
+!.gitignore
+
+# Explicitly ignore the error report
+validation_errors.csv
