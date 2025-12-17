@@ -8,8 +8,9 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 class ErrorReporter:
     """Manages the collection and writing of validation errors to a CSV report file."""
-    def __init__(self, output_filename: str = 'validation_errors.csv'):
-        self.filename = output_filename
+    def __init__(self, output_filename: str = 'validation_errors'):
+        self.csv_filename = f"{output_filename}.csv"
+        self.json_filename = f"{output_filename}.json"
         self.errors = []
         self.fieldnames = ['timestamp', 'record_index', 'employee_id', 'field', 'value', 'error_message']
 
@@ -29,14 +30,26 @@ class ErrorReporter:
         if not self.errors:
             print(f"\nReport: 0 errors recorded. Data is clean!")
             return
+        
+        # Write to CSV Report
         try:
-            with open(self.filename, mode='w', newline='', encoding='utf-8') as file:
+            with open(self.csv_filename, mode='w', newline='', encoding='utf-8') as file:
                 writer = csv.DictWriter(file, fieldnames=self.fieldnames)
                 writer.writeheader()
                 writer.writerows(self.errors)
-            print(f"\nReport written successfully to {self.filename}. Total errors: {len(self.errors)}")
+            print(f"\nReport written successfully to {self.csv_filename}. Total errors: {len(self.errors)}")
         except Exception as e:
             logging.critical(f"CRITICAL: Failed to write error report: {e}")
+
+        # Write to JSON report
+        try:
+            with open(self.json_filename, mode='w', encoding='utf-8') as file:
+                json.dump(self.errors, file, indent=4)
+                logging.info(f"JSON Report written: {self.json_filename}")
+        except Exception as e:
+            logging.error(f"Failed to write JSON report: {e}")
+        
+        logging.info(f"Both CSV, and JSON outputs are logged, total of {len(self.errors)}")
 
     def get_error_count(self) -> int:
         return len(self.errors)
@@ -141,7 +154,7 @@ def load_csv_from_file(filepath: str) -> list:
 if __name__ == "__main__":
     # File paths
     CONFIG_PATH = 'config.json'
-    REPORT_PATH = 'validation_errors.csv'
+    REPORT_PATH = 'validation_errors'
     EMPLOYEES_PATH = 'employees.csv'
 
     # Load data

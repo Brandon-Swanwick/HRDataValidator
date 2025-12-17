@@ -8,5 +8,6 @@
 !README.md
 !.gitignore
 
-# Explicitly ignore the error report
+# Explicitly ignore the error reports
 validation_errors.csv
+validation_errors.json

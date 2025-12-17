@@ -7,7 +7,8 @@ A lightweight, configuration-driven Python utility designed to audit and validat
 * **`validator.py`**: The core execution script that processes the data.
 * **`config.json`**: A JSON configuration file defining the validation rules.
 * **`employees.csv`**: The input source file containing raw employee records.
-* **`validation_errors.csv`**: The output report listing all discovered inconsistencies.
+* **`validation_errors.csv`**: The output report listing all discovered inconsistencies(in CSV format).
+* **`validation_errors.json`**: The output report listing all discovered inconsistencies (in JSON format).
 
 ## Setup and Usage
 
