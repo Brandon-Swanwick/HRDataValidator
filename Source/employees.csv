@@ -1,0 +1,12 @@
+id,salary,hire_date,email,phone
+EMP0001,75000,2023-10-25,joe.clean@corp.com,5551234
+EMP1,50000,2023-01-01,id.fail@test.com,5551111
+EMP0002,15000,2023-01-01,low.pay@test.com,5552222
+EMP0003,999999,2023-01-01,high.pay@test.com,5553333
+EMP0004,Seventy-K,2023-01-01,bad.type@test.com,5554444
+EMP0005,60000,12/25/2023,date.fail@test.com,5555555
+EMP0006,60000,2023-02-30,leap.fail@test.com,5556666
+EMP0007,60000,2023-01-01,missing.symbol.com,5557777
+EMP0008,60000,2023-01-01,too@many@symbols.com,5558888
+EMP0009,60000,2023-01-01,phone.long@test.com,1234567890
+EMP0010,60000,2023-01-01,phone.short@test.com,123

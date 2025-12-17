@@ -1,0 +1,18 @@
+{
+  "salary_rules": {
+    "min": 30000.0,
+    "max": 150000.0
+  },
+  "id_rules": {
+    "required_length": 7
+  },
+  "date_rules": {
+    "format": "%Y-%m-%d"
+  },
+  "phone_rules": {
+    "required_length": 7
+  },
+  "email_rules": {
+    "required_symbol": "@"
+  }
+}
