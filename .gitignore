@@ -1,31 +1,19 @@
-# --- System / Environment ---
+# Environments
 venv/
+.env
+
+# Outputs
+validation_errors.*
+!config.json
+!employees.csv
+
+# Python internals
 __pycache__/
-.pytest_cache/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Editor/System files
+.vscode/
+.idea/
 .DS_Store
-
-# --- The "Ignore All" Rule ---
-*
-
-# --- Allow Folders ---
-!source/
-!tests/
-
-# --- Allow Source Files ---
-!source/validator.py
-!source/config.json
-!source/employees.csv
-
-# --- Allow Test Files ---
-!tests/*.py
-
-# --- Allow Root Files ---
-!README.md
-!.gitignore
-!requirements.txt
-
-# Explicitly ignore the error reports anywhere in the project
-**/validation_errors.csv
-**/validation_errors.json
-**/validation_errors.parquet
+Thumbs.db
