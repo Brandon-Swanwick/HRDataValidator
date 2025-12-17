@@ -24,3 +24,5 @@ python validator.py
 
 
 4. **Review Results**: Open `validation_errors.csv` for the error report.
+5. **Review Results**: Open `validation_errors.json` for the error report.
+6. **Review Results**: Open `validation_errors.parquet` for the error report.
