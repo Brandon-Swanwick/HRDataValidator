@@ -1,6 +1,4 @@
-import logging
-import csv
-import json
+import logging, json, csv
 from datetime import datetime
 
 # Set up basic logging configuration
@@ -11,6 +9,7 @@ class ErrorReporter:
     def __init__(self, output_filename: str = 'validation_errors'):
         self.csv_filename = f"{output_filename}.csv"
         self.json_filename = f"{output_filename}.json"
+        self.parquet_filename = f"{output_filename}.parquet"
         self.errors = []
         self.fieldnames = ['timestamp', 'record_index', 'employee_id', 'field', 'value', 'error_message']
 
@@ -48,6 +47,15 @@ class ErrorReporter:
                 logging.info(f"JSON Report written: {self.json_filename}")
         except Exception as e:
             logging.error(f"Failed to write JSON report: {e}")
+
+        # Write to Parquet (requires Pandas) 
+        try:
+            # keeping pandas usage limited incase a system running this does not have pandas it will avoid a top level structure crash and ensures CSV and JSON still work
+            import pandas as pd
+            df = pd.DataFrame(self.errors)
+            df.to_parquet(f"{self.parquet_filename}")
+        except ImportError:
+            logging.warning(f"skipping Parquet: pandas/pyarrow not installed.")
         
         logging.info(f"Both CSV, and JSON outputs are logged, total of {len(self.errors)}")
 

@@ -9,11 +9,13 @@ A lightweight, configuration-driven Python utility designed to audit and validat
 * **`employees.csv`**: The input source file containing raw employee records.
 * **`validation_errors.csv`**: The output report listing all discovered inconsistencies(in CSV format).
 * **`validation_errors.json`**: The output report listing all discovered inconsistencies (in JSON format).
+* **`validation_errors.parquet`**: The output report listing all discovered inconsistencies (in Parquet format).
 
 ## Setup and Usage
 
 1. **Configure Rules**: Open `config.json` to define your specific data requirements.
 2. **Prepare Data**: Ensure your input file is named `employees.csv`.
+4. **Required libraries:** Ensure you have Pandas installed to generate `validation_erros.parquet` else it will throw an exception error and continue with JSON and CSV only
 3. **Execute**:
 ```bash
 python validator.py
