@@ -95,6 +95,8 @@ Modify Source/config.json to update business rules:
 *   Change phone\_rules if the phone length changes
 
 **⚙️ Program Flow For Validator**
+------------------------------
+
 It's a classic **ETL (Extract, Transform, Load)** pattern. Here is the play-by-play of what happens from the moment you hit "Enter" until the clean data hits your database.
 
 ### Phase 1: The Initialization (The "Setup")
