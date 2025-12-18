@@ -93,3 +93,45 @@ Modify Source/config.json to update business rules:
 *   Change id\_rules if the id length format changes
 
 *   Change phone\_rules if the phone length changes
+
+**⚙️ Program Flow For Validator**
+It's a classic **ETL (Extract, Transform, Load)** pattern. Here is the play-by-play of what happens from the moment you hit "Enter" until the clean data hits your database.
+
+### Phase 1: The Initialization (The "Setup")
+
+1. **Loading the Blueprint:** The `HRDataValidator` starts by reading your `config.json`. It updates its internal `self.rules` dictionary so it knows exactly what the "salary cap" is and what "date format" to look for.
+2. **Database Provisioning:** It runs `_init_db()`. This is a "destructive" setup; it drops the old table and creates a fresh one with the correct schema (`id`, `salary`, `hire_date`, etc.).
+3. **The Reporter:** It hooks into the `ErrorReporter` class, which initializes empty lists to catch any "bad" records.
+
+### Phase 2: The Extraction (The "E")
+
+4. **Reading the CSV:** `load_csv()` opens the file and turns every row into a Python **Dictionary**. At this stage, everything—including the salary—is just a string (e.g., `"$80,000"`).
+
+### Phase 3: The Validation & Transformation (The "T")
+
+This is the "Brain" of the script. For every single row in your CSV:
+
+5. **The Gauntlet:** The script runs a list of checks (`validate_id`, `validate_salary`, `validate_hire_date`, etc.).
+* **Transformation (Salary):** In `validate_salary`, it doesn't just check the value; it **cleans** it. It strips the `$`, removes the commas, and handles the "K" notation (like `Seventy-K`). If it passes, it **overwrites** the messy string in the record with a clean float.
+* **Logic Check (Date):** It tries to force the date string into a `datetime` object. If `datetime.strptime` screams (because the format is wrong or it's Feb 30th), the script catches that error and asks the `ErrorReporter` to write down exactly what went wrong.
+
+
+
+### Phase 4: The Decision (The "Gatekeeper")
+
+6. **The `all(results)` check:**
+* **IF ALL PASS:** If every function returned `True`, the row is considered "Clean."
+* **IF ANY FAIL:** The row is flagged. It is **not** sent to the database. Instead, the `failed_row_count` goes up by one.
+
+
+
+### Phase 5: The Loading (The "L")
+
+7. **Database Insertion:** Only the "Clean" records are sent to `save_clean_record()`. It executes an `INSERT` statement into `hr_data.db`. Because we cleaned the data in Phase 3, the database gets a perfect number (e.g., `80000.0`) instead of `$80,000`.
+
+### Phase 6: The Audit (The "Post-Mortem")
+
+8. **Reporting:** Once the loop finishes, the `ErrorReporter` takes all those collected errors and writes them out to three different files (CSV, JSON, Parquet).
+9. **Summary:** The script prints the final tally to your console so you can see at a glance if the "CEO salary" or the "Feb 30th" date actually got caught.
+
+**In short:** It extracts messy strings  scrubs them into clean numbers/dates  saves the winners to the DB  logs the losers to the reports.
