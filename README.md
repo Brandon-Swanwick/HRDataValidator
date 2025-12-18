@@ -38,10 +38,6 @@ Running Source/query\_data.py interacts directly with the SQLite database to pro
 
 *   **Average Salary**: Calculates the mean salary across all validated employees.
     
-*   **Top Earners**: Identifies the highest-paid individuals currently in the database.
-    
-*   **Department Statistics**: Aggregates data to show salary distributions by team.
-    
 *   **Query Efficiency**: Uses optimized SQL queries to provide instant feedback on large datasets.
     
 
