@@ -5,7 +5,6 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 class ErrorReporter:
-    #Manages the collection and writing of validation errors to multiple formats.
     def __init__(self, output_filename: str = 'validation_errors'):
         self.csv_filename = f"{output_filename}.csv"
         self.json_filename = f"{output_filename}.json"
@@ -26,7 +25,6 @@ class ErrorReporter:
         self.errors.append(error_entry)
 
     def write_report(self):
-        # Writing any entries with erros that do not follow config rules to CSV, JSON, Parquet
         if not self.errors:
             print(f"\nReport: 0 errors recorded. Data is clean!")
             return
@@ -58,16 +56,14 @@ class ErrorReporter:
         except ImportError:
             logging.warning("Skipping Parquet: pandas/pyarrow not installed.")
 
-    def get_error_count(self) -> int:
+    def get_total_error_entries(self) -> int:
         return len(self.errors)
 
 class HRDataValidator:
-    # Validates HR data and saves successful entries (that follow config rules) to a SQL database.
     def __init__(self, reporter: ErrorReporter, config_filepath: str):
         self.reporter = reporter
         self.db_path = 'hr_data.db'
         
-        # Defaults as a fall back if config file is not found/provided
         self.rules = {
             "min_salary": 30000.0,
             "max_salary": 150000.0,
@@ -95,7 +91,6 @@ class HRDataValidator:
         self._init_db()
 
     def _init_db(self):
-        # Initializes a fresh database table for clean data.
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("DROP TABLE IF EXISTS employees")
@@ -112,7 +107,6 @@ class HRDataValidator:
         conn.close()
 
     def save_clean_record(self, record: dict):
-        # Saves a single validated record to the database.
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -126,15 +120,12 @@ class HRDataValidator:
             logging.error(f"Database Insert Error: {e}")
 
     def _log_and_report(self, index: int, record: dict, field: str, message: str):
-        logging.error(message)
         self.reporter.record_error(index, record, field, message)
 
     def validate_salary(self, index: int, record: dict) -> bool:
         raw_val = record.get("salary", "")
-        # Clean the data: handle 'seventy-k', '$', and commas
         s = str(raw_val).lower().strip().replace('$', '').replace(',', '')
         
-        # Real-world transformation
         if s == 'seventy-k': clean_val = 70000.0
         elif s.endswith('k'):
             try: clean_val = float(s.replace('k', '')) * 1000
@@ -148,7 +139,6 @@ class HRDataValidator:
             self._log_and_report(index, record, 'salary', msg)
             return False
         
-        # Update record with the cleaned numeric value for the database
         record['salary'] = clean_val
         return True
 
@@ -168,11 +158,26 @@ class HRDataValidator:
 
     def validate_hire_date(self, index: int, record: dict) -> bool:
         val = record.get("hire_date", "")
+        
+        # check for empty value
+        if not val:
+            self._log_and_report(index, record, 'hire_date', "Date field is empty.")
+            return False
+        
+        # attempt to parse using the format from config
         try:
             datetime.strptime(val, self.rules['date_format'])
             return True
-        except:
-            self._log_and_report(index, record, 'hire_date', f"Date {val} is invalid.")
+        except ValueError as e:
+            error_str = str(e)
+            
+            # Check if the error is because of the format or the actual calendar logic
+            if "does not match format" in error_str:
+                msg = f"Format mismatch. Expected {self.rules['date_format']} but got '{val}'."
+            else:
+                # This catches 'day is out of range for month' (e.g Feb 30th)
+                msg = f"'{val}' is a non existent calendar date."
+            self._log_and_report(index, record, 'hire_date', msg)
             return False
 
     def validate_id(self, index: int, record: dict) -> bool:
@@ -201,10 +206,11 @@ if __name__ == "__main__":
         validator = HRDataValidator(reporter, 'config.json')
         
         clean_count = 0
+        failed_row_count = 0  # NEW: Counter for failed ROWS
+        
         print("\n--- Starting Data Pipeline ---")
         
         for i, record in enumerate(data):
-            # Track if ALL validations pass for this row
             results = [
                 validator.validate_id(i, record),
                 validator.validate_salary(i, record),
@@ -213,14 +219,17 @@ if __name__ == "__main__":
                 validator.validate_phone(i, record)
             ]
             
-            # If every result in the list is True
             if all(results):
                 validator.save_clean_record(record)
                 clean_count += 1
+            else:
+                # If ANY validation failed, the row failed
+                failed_row_count += 1
 
         print(f"\n--- Pipeline Summary ---")
-        print(f"Total Rows Processed: {len(data)}")
+        print(f"Total Rows Processed: {clean_count + failed_row_count}")
         print(f"Successful (Saved to DB): {clean_count}")
-        print(f"Failed (Logged to Reports): {reporter.get_error_count()}")
+        print(f"Failed Rows (Logged): {failed_row_count}")
+        print(f"Total Error Entries Found: {reporter.get_total_error_entries()}")
         
         reporter.write_report()
