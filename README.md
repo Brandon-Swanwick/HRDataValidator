@@ -1,10 +1,10 @@
-HR Data Validation & Analytics Pipeline
-=======================================
+**HR Data Validation & Analytics Pipeline**
+===========================================
 
 This project implements a robust, configuration-driven ETL (Extract, Transform, Load) pipeline designed to process messy HR employee records. It validates incoming data against strict business rules, cleans common data-entry errors, and provides high-level analytics from a structured SQLite database.
 
-🚀 Features
------------
+**🚀 Features**
+---------------
 
 *   **Automated Data Cleaning**: Handles "human" data entry like "Seventy-K" or "$85,000" and converts them into standard floats.
     
@@ -19,87 +19,59 @@ This project implements a robust, configuration-driven ETL (Extract, Transform, 
 *   **Config-Driven**: Validation thresholds (min/max salary, date formats) are managed via config.json for easy updates without changing code.
     
 
-🛠 Project Structure
---------------------
+**🛠 Project Structure**
+------------------------
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   .  ├── Source/  │   ├── validator.py       # Core validation and database logic  │   ├── query_data.py      # Analytics and reporting script  │   ├── employees.csv      # Source data (messy)  │   └── config.json        # Validation rules and thresholds  ├── hr_data.db             # Generated SQLite database (Ignored by Git)  ├── validation_errors.csv  # Audit report of failed records  └── README.md   `
+.├── Source/│   ├── validator.py       # Core validation and database logic│   ├── query\_data.py      # Analytics and reporting script│   ├── employees.csv      # Source data (messy)│   └── config.json        # Validation rules and thresholds├── hr\_data.db             # Generated SQLite database (Ignored by Git)├── validation\_errors.csv  # Audit report of failed records└── README.md
 
-🧪 Edge Case Handling
----------------------
+**🧪 Edge Case Handling**
+-------------------------
 
 The pipeline is hardened against several common data integrity issues:
 
-Case
+| Case | Input Example | Pipeline Action |
 
-Input Example
+| Salary Strings | Seventy-K | Normalized to 70000.0 |
 
-Pipeline Action
+| Salary Bounds | 999999 | Rejected (Exceeds $150k limit in config) |
 
-**Salary Strings**
+| Invalid Dates | 2023-02-30 | Caught as "Non-existent calendar date" |
 
-Seventy-K
+| Date Format | 12/25/2023 | Caught as "Format mismatch" (Expected YYYY-MM-DD) |
 
-Normalized to 70000.0
+| Phone Length | 12345 | Rejected (Requires exactly 7 digits per config) |
 
-**Salary Bounds**
+| Multiple Errors | ID and Email bad | Row failed; both errors logged to the audit report |
 
-999999
+**⚙️ Setup & Usage**
+--------------------
 
-Rejected (Exceeds $150k limit in config)
-
-**Invalid Dates**
-
-2023-02-30
-
-Caught as "Non-existent calendar date"
-
-**Date Format**
-
-12/25/2023
-
-Caught as "Format mismatch" (Expected YYYY-MM-DD)
-
-**Phone Length**
-
-12345
-
-Rejected (Requires exactly 7 digits per config)
-
-**Multiple Errors**
-
-ID and Email bad
-
-Row failed; both errors logged to the audit report
-
-⚙️ Setup & Usage
-----------------
-
-### 1\. Requirements
+### **1\. Requirements**
 
 Ensure you have Python 3.8+ and the following installed:
 
 *   pandas and pyarrow (optional, for Parquet reports)
     
 
-### 2\. Run the Validator
+### **2\. Run the Validator**
 
 Processes employees.csv and populates the database.
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   python Source/validator.py   `
+python Source/validator.py
 
-### 3\. Run Analytics
+### **3\. Run Analytics**
 
 Generates a report on average salary, top earners, and average tenure.
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   python Source/query_data.py   `
+python Source/query\_data.py
 
-📊 Sample Analytics Output
---------------------------
+**📊 Sample Analytics Output**
+------------------------------
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   The average company salary is: $92,730.78  The 1st earner is EMP0028 with a salary of $149,000.00  The Average Tenure of employees is: 4.08 years   `
+The average company salary is: $92,730.78The 1st earner is EMP0028 with a salary of $149,000.00The Average Tenure of employees is: 4.08 years
 
-📝 Configuration
-----------------
+**📝 Configuration**
+--------------------
 
 Modify Source/config.json to update business rules:
 
