@@ -138,27 +138,35 @@ This is the "Brain" of the script. For every single row in your CSV:
 
 **In short:** It extracts messy strings  scrubs them into clean numbers/dates  saves the winners to the DB  logs the losers to the reports.
 
-**📊 Analytics Logic (query_data.py)**
+**⚙️ Program Flow For query_data.py**
 --------------------------------------
 
-The analytics script utilizes Server-Side Aggregation, pushing the computational workload onto the SQLite engine rather than processing raw data in Python memory. This ensures high performance even as the database scales.
+The analytics script operates as a **SQL-First Data Analyst**. Instead of pulling raw data into Python memory, it leverages the SQLite engine to perform high-speed calculations.
 
-1. SQL-Based Salary Averaging
-The script executes SELECT AVG(salary) directly within the database. By performing the calculation at the engine level, it retrieves a single processed float, which is then formatted using Python's :,.2f specifier to ensure correct currency representation (thousands separators and two-decimal precision).
+### Phase 1: Connection & Extraction
 
-2. Intelligent Leaderboard Generation
-The leaderboard logic uses a parameterized LIMIT ? query combined with ORDER BY salary DESC.
+* **Establishing the Link**: The script connects to `hr_data.db` and initializes a database cursor.
+* **Targeted Queries**: Rather than selecting all data, specific functions target only the columns needed (e.g., `salary` or `hire_date`), minimizing the data footprint.
 
-Security: Parameterization prevents SQL injection by treating the "Top N" variable strictly as data.
+### Phase 2: Direct SQL Aggregation
 
-Ranking: An ordinal logic function (get_ordinal) processes the index of each result, handling complex English suffixes (correctly identifying "11th" vs "1st") to create a human-readable leaderboard.
+* **The Server-Side Math**: In `run_analytics_avg_salary()`, the script executes `SELECT AVG(salary)`.
+* **Engine-Level Calculation**: The database engine calculates the mean internally and returns a single float. This is significantly faster than calculating averages in Python for large datasets.
+* **Null Safety**: The logic checks if the result is `None` before attempting to print, ensuring the program doesn't crash on an empty database.
 
-3. SQLite Time Arithmetic (Tenure)
-Tenure is calculated using SQLite's internal JULIANDAY functions rather than external Python libraries.
+### Phase 3: The Ranking Engine
 
-The Calculation: JULIANDAY('now') - JULIANDAY(hire_date) calculates the exact age of the record in days.
+* **Sorting & Limiting**: In `run_analytics_n_highest_earner()`, the script uses `ORDER BY salary DESC LIMIT ?`. This forces the database to sort the entire company by pay and return only the requested number of top rows.
+* **Ordinal Logic**: The `get_ordinal()` function handles the linguistic complexity of English ranking. It uses modulo math to correctly distinguish between "11th" and "1st," providing a professional "1st, 2nd, 3rd" output for the leaderboard.
 
-Normalization: The script aggregates these values using AVG() and divides by 365.25 to account for leap year cycles, providing a mathematically accurate average tenure across the entire organization.
+### Phase 4: SQLite Time Arithmetic
 
-4. Direct Database Interaction
-By utilizing fetchone() for single metrics and fetchall() for lists, the script minimizes memory overhead. Every function follows a strict Connect → Query → Format → Close lifecycle to prevent database locking and memory leaks.
+* **Julian Day Conversion**: In `run_analytics_avg_employee_tenure()`, the script utilizes `JULIANDAY('now')`. This converts the current time into a decimal representation of days.
+* **The Delta**: It subtracts the `hire_date` (also converted to Julian days) to find the exact "age" of each record.
+* **Normalization**: The average days are divided by `365.25` within the SQL query itself, accounting for leap years and providing a clean "Years of Tenure" output.
+
+### Phase 5: Formatting & Presentation
+
+* **The "Post-Processor"**: Python takes the raw numbers from SQL and applies formatting strings.
+* **Clean Output**: It uses `:,.2f` to re-insert currency commas and round decimals to two places.
+* **The Terminal Report**: The `if __name__ == "__main__":` block organizes the function calls into a visual report with dashed separators for easy reading in the console.
