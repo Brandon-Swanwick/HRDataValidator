@@ -19,20 +19,18 @@ This project implements a robust, configuration-driven ETL (Extract, Transform, 
 *   **Config-Driven**: Validation thresholds (min/max salary, date formats) are managed via config.json for easy updates without changing code.
     
 
-**🛠 Project Structure**
-------------------------
+## 🛠 Project Structure
 
-.├── Source/│   
-    ├── validator.py       # Core validation and database logic
-    │   
-    ├── query\_data.py      # Analytics and reporting script
-    │   
-    ├── employees.csv      # Source data (messy)
-    │   
-    └── config.json        # Validation rules and thresholds
-    ├── hr\_data.db             # Generated SQLite database (Ignored by Git)
-    ├── validation\_errors.csv  # Audit report of failed records
-└── README.md
+```text
+.
+├── Source/
+│   ├── validator.py       # Core validation and database logic
+│   ├── query_data.py      # Analytics and reporting script
+│   ├── employees.csv      # Source data (messy)
+│   └── config.json        # Validation rules and thresholds
+├── hr_data.db             # Generated SQLite database (Ignored by Git)
+├── validation_errors.csv  # Audit report of failed records
+└── README.md              # Project documentation
 
 **🧪 Edge Case Handling**
 -------------------------
