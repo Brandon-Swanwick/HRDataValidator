@@ -89,3 +89,7 @@ Modify Source/config.json to update business rules:
 *   Change salary\_rules to adjust pay scales.
     
 *   Update date\_rules if the source file format changes.
+
+*   Change id\_rules if the id length format changes
+
+*   Change phone\_rules if the phone length changes
