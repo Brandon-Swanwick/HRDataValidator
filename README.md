@@ -94,7 +94,7 @@ Modify Source/config.json to update business rules:
 
 *   Change phone\_rules if the phone length changes
 
-**⚙️ Program Flow For Validator**
+**⚙️ Program Flow For validator.py**
 ------------------------------
 
 It's a classic **ETL (Extract, Transform, Load)** pattern. Here is the play-by-play of what happens from the moment you hit "Enter" until the clean data hits your database.
@@ -137,3 +137,39 @@ This is the "Brain" of the script. For every single row in your CSV:
 9. **Summary:** The script prints the final tally to your console so you can see at a glance if the "CEO salary" or the "Feb 30th" date actually got caught.
 
 **In short:** It extracts messy strings  scrubs them into clean numbers/dates  saves the winners to the DB  logs the losers to the reports.
+
+**⚙️ Program Flow For query_data.py**
+------------------------------
+
+While `validator.py` acts as the **Gatekeeper**, `query_data.py` acts as the **Analyst**. Its job is to take that raw, clean data and turn it into human-readable business intelligence.
+
+Here is the logic flow for the analytics script:
+
+### Phase 1: Connection & Extraction
+
+1. **Opening the Vault:** The script connects to `hr_data.db` using `sqlite3`.
+2. **Pulling the Data:** It executes a `SELECT * FROM employees` query.
+3. **DataFrame Conversion:** It hands the SQL results over to `pandas`. This is the most critical step because it converts the flat database rows into a powerful "DataFrame" (a programmable spreadsheet) where we can perform math across thousands of rows instantly.
+
+### Phase 2: Salary Analytics (The "Money" Logic)
+
+4. **The Average:** It runs `df['salary'].mean()`. Because `validator.py` converted everything to floats (e.g., `70000.0`), Pandas can calculate the average company salary in one line without getting tripped up by "$" or "K" strings.
+5. **The Leaderboard:** It uses `df.nlargest(5, 'salary')`. It sorts the entire company by pay and grabs the top names. This is where you verify that your "999k" employee was correctly excluded (if they were, the top earner will be someone like `EMP0028` at $149k).
+
+### Phase 3: Time Logic (The "Tenure" Calculation)
+
+This is the most complex part of the script because "Tenure" isn't a column in your database—it has to be calculated on the fly:
+
+6. **Object Conversion:** It converts the `hire_date` column (which is stored as text like "2021-05-10") into actual Python `datetime` objects.
+7. **The "Snapshot":** It captures the current date (`datetime.now()`).
+8. **The Delta:** For every employee, it subtracts their `hire_date` from "Today." This creates a "Timedelta" (the number of days they've worked there).
+9. **Normalization:** It divides those total days by **365.25** to account for leap years, giving you a clean "Years of Tenure" number (e.g., `4.08 years`).
+
+### Phase 4: Formatting & Presentation
+
+10. **The ASCII UI:** Finally, the script doesn't just print raw numbers. It uses string formatting to create the visual "Report" box:
+* It adds the `$` signs back in for the display.
+* It rounds the averages to 2 decimal places.
+* It draws the separator lines (`================`) to make it look like a professional terminal printout.
+
+**In short:** `query_data.py` reads the clean DB  performs high-speed math using Pandas  calculates time-based tenure  formats the results into a professional executive summary.
