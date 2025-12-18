@@ -22,7 +22,17 @@ This project implements a robust, configuration-driven ETL (Extract, Transform, 
 **🛠 Project Structure**
 ------------------------
 
-.├── Source/│   ├── validator.py       # Core validation and database logic│   ├── query\_data.py      # Analytics and reporting script│   ├── employees.csv      # Source data (messy)│   └── config.json        # Validation rules and thresholds├── hr\_data.db             # Generated SQLite database (Ignored by Git)├── validation\_errors.csv  # Audit report of failed records└── README.md
+.├── Source/│   
+    ├── validator.py       # Core validation and database logic
+    │   
+    ├── query\_data.py      # Analytics and reporting script
+    │   
+    ├── employees.csv      # Source data (messy)
+    │   
+    └── config.json        # Validation rules and thresholds
+    ├── hr\_data.db             # Generated SQLite database (Ignored by Git)
+    ├── validation\_errors.csv  # Audit report of failed records
+└── README.md
 
 **🧪 Edge Case Handling**
 -------------------------
