@@ -77,7 +77,7 @@ python Source/query\_data.py
 **📊 Sample Analytics Output**
 ------------------------------
 
-*   The average company salary is: $92,730.78
+*   The Average company salary is: $92,730.78
 *   The 1st earner is EMP0028 with a salary of $149,000.00
 *   The Average Tenure of employees is: 4.08 years
 
