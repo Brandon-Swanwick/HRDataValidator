@@ -1,59 +1,108 @@
-HR Data Validation & Analytics Tool
-===================================
+HR Data Validation & Analytics Pipeline
+=======================================
 
-A lightweight, configuration-driven Python utility designed to audit, clean, and analyze HR employee records. This tool identifies formatting errors, cleans messy data, saves validated records to a SQLite database, and provides automated financial insights.
+This project implements a robust, configuration-driven ETL (Extract, Transform, Load) pipeline designed to process messy HR employee records. It validates incoming data against strict business rules, cleans common data-entry errors, and provides high-level analytics from a structured SQLite database.
 
-Project Structure
------------------
+🚀 Features
+-----------
 
-*   **Source/validator.py**: The core execution script that validates data and builds the clean database.
+*   **Automated Data Cleaning**: Handles "human" data entry like "Seventy-K" or "$85,000" and converts them into standard floats.
     
-*   **Source/query\_data.py**: The analytics script that runs SQL calculations against the validated data.
+*   **Strict Validation Engine**: Enforces rules for Employee IDs, Phone Numbers, Emails, and Salaries.
     
-*   **Source/config.json**: A JSON configuration file defining validation and salary rules.
+*   **Advanced Date Logic**: Distinguishes between formatting errors (e.g., 12/25/2024) and calendar logic errors (e.g., 2023-02-30).
     
-*   **Source/employees.csv**: The input source file containing raw employee records.
+*   **Multi-Format Audit Logs**: Generates detailed error reports in **CSV**, **JSON**, and **Parquet** for cross-departmental review.
     
-*   **hr\_data.db**: The SQLite database containing all successfully validated records.
+*   **SQLite Integration**: Automatically populates a clean relational database for downstream analytics.
     
-*   **validation\_errors.**: The output report listing all discovered inconsistencies.
+*   **Config-Driven**: Validation thresholds (min/max salary, date formats) are managed via config.json for easy updates without changing code.
     
 
-Database Integration
+🛠 Project Structure
 --------------------
 
-The tool now features an automated database pipeline. When validator.py is executed, it performs the following:
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   .  ├── Source/  │   ├── validator.py       # Core validation and database logic  │   ├── query_data.py      # Analytics and reporting script  │   ├── employees.csv      # Source data (messy)  │   └── config.json        # Validation rules and thresholds  ├── hr_data.db             # Generated SQLite database (Ignored by Git)  ├── validation_errors.csv  # Audit report of failed records  └── README.md   `
 
-*   **Data Cleaning**: Converts textual salary representations (e.g., "Seventy-K") into numeric values.
-    
-*   **DB Persistence**: Successfully validated and cleaned records are automatically written to a table in hr\_data.db.
-    
-*   **Schema Management**: The script handles the creation of the employees table, ensuring the database is always ready for querying.
+🧪 Edge Case Handling
+---------------------
+
+The pipeline is hardened against several common data integrity issues:
+
+Case
+
+Input Example
+
+Pipeline Action
+
+**Salary Strings**
+
+Seventy-K
+
+Normalized to 70000.0
+
+**Salary Bounds**
+
+999999
+
+Rejected (Exceeds $150k limit in config)
+
+**Invalid Dates**
+
+2023-02-30
+
+Caught as "Non-existent calendar date"
+
+**Date Format**
+
+12/25/2023
+
+Caught as "Format mismatch" (Expected YYYY-MM-DD)
+
+**Phone Length**
+
+12345
+
+Rejected (Requires exactly 7 digits per config)
+
+**Multiple Errors**
+
+ID and Email bad
+
+Row failed; both errors logged to the audit report
+
+⚙️ Setup & Usage
+----------------
+
+### 1\. Requirements
+
+Ensure you have Python 3.8+ and the following installed:
+
+*   pandas and pyarrow (optional, for Parquet reports)
     
 
-Querying and Calculations
--------------------------
+### 2\. Run the Validator
 
-Running Source/query\_data.py interacts directly with the SQLite database to provide high-level HR metrics without manual spreadsheet work:
+Processes employees.csv and populates the database.
 
-*   **Average Salary**: Calculates the mean salary across all validated employees.
-    
-*   **Query Efficiency**: Uses optimized SQL queries to provide instant feedback on large datasets.
-    
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   python Source/validator.py   `
 
-Setup and Usage
----------------
+### 3\. Run Analytics
 
-1.  **Configure Rules**: Open Source/config.json to define your specific data requirements.
-    
-2.  python Source/validator.py
-    
-3.  python Source/query\_data.py
-    
+Generates a report on average salary, top earners, and average tenure.
 
-Reviewing Results
------------------
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   python Source/query_data.py   `
 
-*   **Clean Data**: Open hr\_data.db using a SQLite browser to see records that passed all checks.
+📊 Sample Analytics Output
+--------------------------
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   The average company salary is: $92,730.78  The 1st earner is EMP0028 with a salary of $149,000.00  The Average Tenure of employees is: 4.08 years   `
+
+📝 Configuration
+----------------
+
+Modify Source/config.json to update business rules:
+
+*   Change salary\_rules to adjust pay scales.
     
-*   **Error Logs**: Review validation\_errors.csv to see why specific records were rejected.
+*   Update date\_rules if the source file format changes.
