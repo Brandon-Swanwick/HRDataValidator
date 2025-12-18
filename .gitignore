@@ -2,10 +2,13 @@
 venv/
 .env
 
+# Database (Local SQLite Files not to be committed)
+*Source/.db
+
 # Outputs
-validation_errors.*
-!config.json
-!employees.csv
+Source/validation_errors.*
+!Source/config.json
+!Source/employees.csv
 
 # Python internals
 __pycache__/

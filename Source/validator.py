@@ -1,11 +1,11 @@
-import logging, json, csv
+import logging, json, csv, sqlite3, os
 from datetime import datetime
 
 # Set up basic logging configuration
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 class ErrorReporter:
-    """Manages the collection and writing of validation errors to a CSV report file."""
+    #Manages the collection and writing of validation errors to multiple formats.
     def __init__(self, output_filename: str = 'validation_errors'):
         self.csv_filename = f"{output_filename}.csv"
         self.json_filename = f"{output_filename}.json"
@@ -26,11 +26,12 @@ class ErrorReporter:
         self.errors.append(error_entry)
 
     def write_report(self):
+        # Writing any entries with erros that do not follow config rules to CSV, JSON, Parquet
         if not self.errors:
             print(f"\nReport: 0 errors recorded. Data is clean!")
             return
         
-        # Write to CSV Report
+        # 1. CSV Report
         try:
             with open(self.csv_filename, mode='w', newline='', encoding='utf-8') as file:
                 writer = csv.DictWriter(file, fieldnames=self.fieldnames)
@@ -38,9 +39,9 @@ class ErrorReporter:
                 writer.writerows(self.errors)
                 logging.info(f"CSV Report written: {self.csv_filename}")
         except Exception as e:
-            logging.critical(f"CRITICAL: Failed to write error report: {e}")
+            logging.critical(f"CRITICAL: Failed to write CSV report: {e}")
 
-        # Write to JSON report
+        # 2. JSON Report
         try:
             with open(self.json_filename, mode='w', encoding='utf-8') as file:
                 json.dump(self.errors, file, indent=4)
@@ -48,29 +49,26 @@ class ErrorReporter:
         except Exception as e:
             logging.error(f"Failed to write JSON report: {e}")
 
-        # Write to Parquet (requires Pandas) 
+        # 3. Parquet Report
         try:
-            # keeping pandas usage limited incase a system running this does not have pandas it will avoid a top level structure crash and ensures CSV and JSON still work
             import pandas as pd
             df = pd.DataFrame(self.errors)
-            df.to_parquet(f"{self.parquet_filename}")
+            df.to_parquet(self.parquet_filename)
             logging.info(f"Parquet Report written: {self.parquet_filename}")
         except ImportError:
-            logging.warning(f"skipping Parquet: pandas/pyarrow not installed.")
-        
-        logging.info(f"All 3 output files are logged, total of {len(self.errors)} errors. ")
+            logging.warning("Skipping Parquet: pandas/pyarrow not installed.")
 
     def get_error_count(self) -> int:
         return len(self.errors)
 
 class HRDataValidator:
-    """A class to validate HR data fields using external configuration rules."""
-    def __init__(self, data_list: list, reporter: ErrorReporter, config_filepath: str):
-        self.data = data_list
+    # Validates HR data and saves successful entries (that follow config rules) to a SQL database.
+    def __init__(self, reporter: ErrorReporter, config_filepath: str):
         self.reporter = reporter
+        self.db_path = 'hr_data.db'
         
-        # Centralized system defaults if JSON loading fails
-        defaults = {
+        # Defaults as a fall back if config file is not found/provided
+        self.rules = {
             "min_salary": 30000.0,
             "max_salary": 150000.0,
             "id_len": 7,
@@ -82,122 +80,147 @@ class HRDataValidator:
         try:
             with open(config_filepath, 'r') as file:
                 config = json.load(file)
-                self.min_salary = config['salary_rules']['min']
-                self.max_salary = config['salary_rules']['max']
-                self.id_len = config['id_rules']['required_length']
-                self.date_format = config['date_rules']['format']
-                self.phone_len = config['phone_rules']['required_length']
-                self.email_symbol = config['email_rules']['required_symbol']
-                logging.info(f"Configuration loaded successfully from {config_filepath}.")
-        except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
-            logging.warning(f"Config issues ({e}). Using system fallback defaults.")
-            self.min_salary = defaults["min_salary"]
-            self.max_salary = defaults["max_salary"]
-            self.id_len = defaults["id_len"]
-            self.phone_len = defaults["phone_len"]
-            self.date_format = defaults["date_format"]
-            self.email_symbol = defaults["email_symbol"]
+                self.rules.update({
+                    "min_salary": config['salary_rules']['min'],
+                    "max_salary": config['salary_rules']['max'],
+                    "id_len": config['id_rules']['required_length'],
+                    "date_format": config['date_rules']['format'],
+                    "phone_len": config['phone_rules']['required_length'],
+                    "email_symbol": config['email_rules']['required_symbol']
+                })
+                logging.info(f"Configuration loaded from {config_filepath}.")
+        except Exception as e:
+            logging.warning(f"Using fallback defaults: {e}")
+
+        self._init_db()
+
+    def _init_db(self):
+        # Initializes a fresh database table for clean data.
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("DROP TABLE IF EXISTS employees")
+        cursor.execute('''
+            CREATE TABLE employees (
+                id TEXT PRIMARY KEY,
+                salary REAL,
+                hire_date TEXT,
+                email TEXT,
+                phone TEXT
+            )
+        ''')
+        conn.commit()
+        conn.close()
+
+    def save_clean_record(self, record: dict):
+        # Saves a single validated record to the database.
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO employees (id, salary, hire_date, email, phone)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (record['id'], record['salary'], record['hire_date'], record['email'], record['phone']))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logging.error(f"Database Insert Error: {e}")
 
     def _log_and_report(self, index: int, record: dict, field: str, message: str):
         logging.error(message)
         self.reporter.record_error(index, record, field, message)
 
-    def validate_phone(self, index: int, record: dict, phone: str) -> bool:
-        phone_str = str(phone) 
-        if len(phone_str) != self.phone_len:
-            msg = f"Phone check failed: '{phone_str}' must be exactly {self.phone_len} digits."
-            self._log_and_report(index, record, 'phone', msg)
-            return False
-        return True
-
-    def validate_email(self, index: int, record: dict, email: str) -> bool:
-        if not email or email.count(self.email_symbol) != 1:
-            msg = f"Email check failed: '{email}' must contain exactly one '{self.email_symbol}'."
-            self._log_and_report(index, record, 'email', msg)
-            return False
-        return True
-
-    def validate_hire_date(self, index: int, record: dict, date_str: str) -> bool:
-        import re
-        # Step 1: Check if the string matches the visual pattern (YYYY-MM-DD)
-        # We use a regex so we can tell the difference between format and logic
-        format_pattern = r'^\d{4}-\d{2}-\d{2}$'
+    def validate_salary(self, index: int, record: dict) -> bool:
+        raw_val = record.get("salary", "")
+        # Clean the data: handle 'seventy-k', '$', and commas
+        s = str(raw_val).lower().strip().replace('$', '').replace(',', '')
         
-        if not re.match(format_pattern, str(date_str)):
-            msg = f"Date Format Error: '{date_str}' does not match {self.date_format}."
-            self._log_and_report(index, record, 'hire_date', msg)
-            return False
+        # Real-world transformation
+        if s == 'seventy-k': clean_val = 70000.0
+        elif s.endswith('k'):
+            try: clean_val = float(s.replace('k', '')) * 1000
+            except: clean_val = 0.0
+        else:
+            try: clean_val = float(s)
+            except: clean_val = -1.0
 
-        # Step 2: Check if the date actually exists on the calendar
-        try:
-            datetime.strptime(date_str, self.date_format)
-            return True
-        except ValueError:
-            msg = f"Date Calendar Error: '{date_str}' is an impossible date (e.g. Feb 30th)."
-            self._log_and_report(index, record, 'hire_date', msg)
-            return False
-        except TypeError:
-            msg = f"Date check failed: '{date_str}' is not a valid string."
-            self._log_and_report(index, record, 'hire_date', msg)
-            return False
-
-    def validate_employee_id(self, index: int, record: dict, employee_id: str) -> bool:
-        clean_id = str(employee_id).strip()
-        if not clean_id or len(clean_id) != self.id_len:
-            msg = f"ID check failed: '{employee_id}' must be {self.id_len} chars."
-            self._log_and_report(index, record, 'id', msg)
-            return False
-        return True
-
-    def validate_salary(self, index: int, record: dict, salary: str) -> bool:
-        try:
-            val = float(salary)
-            if val < self.min_salary or val > self.max_salary:
-                msg = f"Salary {val} out of bounds ({self.min_salary}-{self.max_salary})."
-                self._log_and_report(index, record, 'salary', msg)
-                return False
-            return True
-        except (ValueError, TypeError):
-            msg = f"Salary '{salary}' failed: Not a numeric value."
+        if clean_val < self.rules['min_salary'] or clean_val > self.rules['max_salary']:
+            msg = f"Salary {raw_val} failed validation."
             self._log_and_report(index, record, 'salary', msg)
             return False
+        
+        # Update record with the cleaned numeric value for the database
+        record['salary'] = clean_val
+        return True
 
-def load_csv_from_file(filepath: str) -> list:
-    """Reads the CSV file and converts it into a list of dictionaries."""
+    def validate_phone(self, index: int, record: dict) -> bool:
+        val = str(record.get("phone", ""))
+        if len(val) != self.rules['phone_len']:
+            self._log_and_report(index, record, 'phone', f"Must be {self.rules['phone_len']} digits.")
+            return False
+        return True
+
+    def validate_email(self, index: int, record: dict) -> bool:
+        val = record.get("email", "")
+        if val.count(self.rules['email_symbol']) != 1:
+            self._log_and_report(index, record, 'email', "Invalid email format.")
+            return False
+        return True
+
+    def validate_hire_date(self, index: int, record: dict) -> bool:
+        val = record.get("hire_date", "")
+        try:
+            datetime.strptime(val, self.rules['date_format'])
+            return True
+        except:
+            self._log_and_report(index, record, 'hire_date', f"Date {val} is invalid.")
+            return False
+
+    def validate_id(self, index: int, record: dict) -> bool:
+        val = str(record.get("id", "")).strip()
+        if len(val) != self.rules['id_len']:
+            self._log_and_report(index, record, 'id', f"ID must be {self.rules['id_len']} chars.")
+            return False
+        return True
+
+def load_csv(filepath: str) -> list:
     data = []
     try:
         with open(filepath, mode='r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
-            for row in reader:
-                data.append(row)
-        logging.info(f"Successfully loaded {len(data)} records from {filepath}.")
-    except FileNotFoundError:
-        logging.error(f"The file {filepath} was not found.")
+            for row in reader: data.append(row)
+        logging.info(f"Loaded {len(data)} records.")
+    except Exception as e:
+        logging.error(f"Failed to load CSV: {e}")
     return data
 
 if __name__ == "__main__":
-    # File paths
-    CONFIG_PATH = 'config.json'
-    REPORT_PATH = 'validation_errors'
-    EMPLOYEES_PATH = 'employees.csv'
-
-    # Load data
-    data = load_csv_from_file(EMPLOYEES_PATH)
+    data = load_csv('employees.csv')
     
     if data:
-        reporter = ErrorReporter(REPORT_PATH)
-        validator = HRDataValidator(data, reporter, CONFIG_PATH)
+        reporter = ErrorReporter('validation_errors')
+        validator = HRDataValidator(reporter, 'config.json')
         
-        print("\n--- Starting Data Validation ---")
+        clean_count = 0
+        print("\n--- Starting Data Pipeline ---")
+        
         for i, record in enumerate(data):
-            validator.validate_employee_id(i, record, record.get("id", ""))
-            validator.validate_salary(i, record, record.get("salary", ""))
-            validator.validate_hire_date(i, record, record.get("hire_date", ""))
-            validator.validate_email(i, record, record.get("email", ""))
-            validator.validate_phone(i, record, record.get("phone", ""))
+            # Track if ALL validations pass for this row
+            results = [
+                validator.validate_id(i, record),
+                validator.validate_salary(i, record),
+                validator.validate_hire_date(i, record),
+                validator.validate_email(i, record),
+                validator.validate_phone(i, record)
+            ]
+            
+            # If every result in the list is True
+            if all(results):
+                validator.save_clean_record(record)
+                clean_count += 1
 
-        print(f"\n--- Final Summary ---")
-        print(f"Total Records: {len(data)} | Total Errors: {reporter.get_error_count()}")
+        print(f"\n--- Pipeline Summary ---")
+        print(f"Total Rows Processed: {len(data)}")
+        print(f"Successful (Saved to DB): {clean_count}")
+        print(f"Failed (Logged to Reports): {reporter.get_error_count()}")
+        
         reporter.write_report()
-    else:
-        print("\nError: No data loaded. Check if employees.csv exists.")
