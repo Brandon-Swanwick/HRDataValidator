@@ -31,6 +31,7 @@ This project implements a robust, configuration-driven ETL (Extract, Transform, 
 ├── hr_data.db             # Generated SQLite database (Ignored by Git)
 ├── validation_errors.csv  # Audit report of failed records
 └── README.md              # Project documentation
+```
 
 **🧪 Edge Case Handling**
 -------------------------
